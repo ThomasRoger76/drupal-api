@@ -77,11 +77,26 @@ namespace Drupal\mon_module\EventSubscriber;
 
 use Drupal\Core\Entity\EntityInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use GuzzleHttp\ClientInterface;
+use Psr\Log\LoggerInterface;
+
+// ⚠️ DEUX APPROCHES — choisir selon le projet :
+//
+// APPROCHE A (recommandée) : hook Drupal dans .module
+// → Simple, natif, aucune dépendance
+// function mon_module_node_update(NodeInterface $node): void { ... }
+//
+// APPROCHE B : EventSubscriber via drupal/hook_event_dispatcher (contrib requis)
+// → composer require drupal/hook_event_dispatcher
+// → Plus testable (mock du dispatcher)
+// → Utilise l'EventDispatcher Symfony
+
+// ─── APPROCHE B — EventSubscriber (nécessite drupal/hook_event_dispatcher) ──
+
 use Drupal\core_event_dispatcher\Event\Entity\EntityInsertEvent;
 use Drupal\core_event_dispatcher\Event\Entity\EntityUpdateEvent;
 use Drupal\core_event_dispatcher\Event\Entity\EntityDeleteEvent;
-use GuzzleHttp\ClientInterface;
-use Psr\Log\LoggerInterface;
+use Drupal\core_event_dispatcher\EntityHookEvents;
 
 class ContenuWebhookSubscriber implements EventSubscriberInterface {
 
@@ -92,9 +107,10 @@ class ContenuWebhookSubscriber implements EventSubscriberInterface {
 
   public static function getSubscribedEvents(): array {
     return [
-      'hook_event_dispatcher.entity.insert' => 'onEntityChange',
-      'hook_event_dispatcher.entity.update' => 'onEntityChange',
-      'hook_event_dispatcher.entity.delete' => 'onEntityDelete',
+      // Ces events existent SEULEMENT si drupal/hook_event_dispatcher est installé
+      EntityHookEvents::ENTITY_INSERT => 'onEntityChange',
+      EntityHookEvents::ENTITY_UPDATE => 'onEntityChange',
+      EntityHookEvents::ENTITY_DELETE => 'onEntityDelete',
     ];
   }
 
